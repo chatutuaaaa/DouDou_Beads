@@ -1,0 +1,245 @@
+.home-page {
+  display: flex;
+  justify-content: center;
+  padding: 28rpx 22rpx 42rpx;
+}
+
+.main-panel {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 700rpx;
+  min-height: calc(100vh - 56rpx);
+  padding: 26rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.72);
+  border-radius: 54rpx;
+  background: rgba(255, 255, 255, 0.48);
+  box-shadow: 0 28rpx 86rpx rgba(94, 66, 42, 0.16);
+  backdrop-filter: blur(26px);
+  -webkit-backdrop-filter: blur(26px);
+}
+
+.section-card {
+  box-sizing: border-box;
+  margin-top: 22rpx;
+  padding: 26rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.8);
+  border-radius: 34rpx;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: 0 16rpx 42rpx rgba(96, 66, 42, 0.1);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.section-card:first-child {
+  margin-top: 0;
+}
+
+.profile-card {
+  display: flex;
+  align-items: center;
+  min-height: 132rpx;
+}
+
+.profile-avatar {
+  flex: none;
+  width: 104rpx;
+  height: 104rpx;
+  overflow: hidden;
+  border: 4rpx solid rgba(48, 40, 32, 0.86);
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.fallback-avatar {
+  color: #f45d48;
+  font-size: 34rpx;
+  font-weight: 900;
+  line-height: 104rpx;
+  text-align: center;
+}
+
+.profile-info {
+  flex: 1;
+  min-width: 0;
+  margin-left: 24rpx;
+}
+
+.profile-name {
+  overflow: hidden;
+  color: #2b2118;
+  font-size: 32rpx;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-meta {
+  overflow: hidden;
+  margin-top: 10rpx;
+  color: #8a7766;
+  font-size: 23rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upload-card {
+  padding: 24rpx 24rpx 22rpx;
+}
+
+.upload-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 350rpx;
+  height: 350rpx;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 4rpx solid rgba(48, 40, 32, 0.84);
+  border-radius: 16rpx;
+  background: rgba(255, 255, 255, 0.64);
+  box-shadow: inset 0 0 0 1rpx rgba(255, 255, 255, 0.72), 0 16rpx 42rpx rgba(75, 51, 32, 0.1);
+}
+
+.upload-box.has-image {
+  border-color: rgba(244, 93, 72, 0.88);
+}
+
+.upload-image {
+  width: 100%;
+  height: 100%;
+}
+
+.upload-placeholder {
+  text-align: center;
+}
+
+.upload-icon {
+  color: #f45d48;
+  font-size: 64rpx;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.upload-title {
+  margin-top: 14rpx;
+  color: #f45d48;
+  font-size: 36rpx;
+  font-weight: 900;
+}
+
+.upload-subtitle,
+.upload-hint,
+.image-name {
+  color: #8a7766;
+  font-size: 23rpx;
+  text-align: center;
+}
+
+.upload-subtitle {
+  margin-top: 8rpx;
+}
+
+.upload-hint,
+.image-name {
+  overflow: hidden;
+  margin-top: 18rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.param-section {
+  margin-top: 26rpx;
+}
+
+.param-section:first-child {
+  margin-top: 0;
+}
+
+.param-section.compact {
+  margin-top: 22rpx;
+}
+
+.param-label {
+  margin-bottom: 12rpx;
+  color: #6b4b35;
+  font-size: 24rpx;
+  font-weight: 900;
+}
+
+.option-row {
+  display: flex;
+  gap: 16rpx;
+}
+
+.two-cols .option-card {
+  flex: 1;
+}
+
+.option-card,
+.color-chip {
+  box-sizing: border-box;
+  border: 3rpx solid rgba(48, 40, 32, 0.72);
+  border-radius: 18rpx;
+  color: #49382a;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.option-card {
+  min-height: 86rpx;
+  padding: 14rpx 16rpx;
+}
+
+.option-card.slim {
+  min-height: 76rpx;
+}
+
+.option-title {
+  font-size: 28rpx;
+  font-weight: 900;
+  text-align: center;
+}
+
+.option-desc {
+  margin-top: 4rpx;
+  color: #8a7766;
+  font-size: 20rpx;
+  text-align: center;
+}
+
+.option-card.active,
+.color-chip.active {
+  border-color: #f45d48;
+  color: #ffffff;
+  background: linear-gradient(135deg, #ff8a3d, #f45d48);
+  box-shadow: 0 12rpx 26rpx rgba(244, 93, 72, 0.22);
+}
+
+.option-card.active .option-desc {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.color-row {
+  flex-wrap: nowrap;
+}
+
+.color-chip {
+  flex: 1;
+  height: 62rpx;
+  font-size: 24rpx;
+  font-weight: 900;
+  line-height: 56rpx;
+  text-align: center;
+}
+
+.generate-card {
+  padding: 26rpx 34rpx;
+}
+
+.generate-button {
+  width: 410rpx;
+  height: 112rpx;
+  border: 4rpx solid rgba(48, 40, 32, 0.88);
+  border-radius: 28rpx;
+  font-size: 34rpx;
+  line-height: 104rpx;
+}

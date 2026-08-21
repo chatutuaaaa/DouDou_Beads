@@ -1,0 +1,78 @@
+<view wx:if="{{user}}" class="page home-page">
+  <view class="main-panel">
+    <view class="profile-card section-card">
+      <image wx:if="{{user.avatarUrl}}" class="profile-avatar" src="{{user.avatarUrl}}" mode="aspectFill"></image>
+      <view wx:else class="profile-avatar fallback-avatar">{{defaultAvatarText}}</view>
+      <view class="profile-info">
+        <view class="profile-name">{{user.nickname || '拼豆用户'}}</view>
+        <view class="profile-meta">已登录 · {{user.openidMasked}}</view>
+      </view>
+    </view>
+
+    <view class="upload-card section-card" bindtap="chooseImage">
+      <view class="upload-box {{imagePath ? 'has-image' : ''}}">
+        <image wx:if="{{imagePath}}" class="upload-image" src="{{imagePath}}" mode="aspectFit"></image>
+        <view wx:else class="upload-placeholder">
+          <view class="upload-icon">＋</view>
+          <view class="upload-title">上传图片</view>
+          <view class="upload-subtitle">相册 / 拍照</view>
+        </view>
+      </view>
+      <view wx:if="{{imagePath}}" class="image-name">{{imageName}}</view>
+      <view wx:else class="upload-hint">选择主体清楚、背景简单的图片效果更好</view>
+    </view>
+
+    <view class="params-card section-card">
+      <view class="param-section">
+        <view class="param-label">尺寸</view>
+        <view class="option-row two-cols">
+          <view
+            wx:for="{{sizeOptions}}"
+            wx:key="label"
+            class="option-card {{selectedSizeIndex === index ? 'active' : ''}}"
+            data-index="{{index}}"
+            bindtap="selectSize"
+          >
+            <view class="option-title">{{item.label}}</view>
+            <view class="option-desc">{{item.desc}}</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="param-section compact">
+        <view class="param-label">颜色</view>
+        <view class="option-row color-row">
+          <view
+            wx:for="{{colorOptions}}"
+            wx:key="*this"
+            class="color-chip {{selectedColorIndex === index ? 'active' : ''}}"
+            data-index="{{index}}"
+            bindtap="selectColor"
+          >{{item}} 色</view>
+        </view>
+      </view>
+
+      <view class="param-section compact">
+        <view class="param-label">风格</view>
+        <view class="option-row two-cols">
+          <view
+            wx:for="{{styleOptions}}"
+            wx:key="value"
+            class="option-card slim {{selectedStyleIndex === index ? 'active' : ''}}"
+            data-index="{{index}}"
+            bindtap="selectStyle"
+          >
+            <view class="option-title">{{item.label}}</view>
+            <view class="option-desc">{{item.desc}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="generate-card section-card">
+      <button class="primary-button generate-button" loading="{{generating}}" disabled="{{generating}}" bindtap="submitGenerate">
+        {{generating ? '生成中...' : '生成图纸'}}
+      </button>
+    </view>
+  </view>
+</view>

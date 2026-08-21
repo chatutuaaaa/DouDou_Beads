@@ -1,0 +1,73 @@
+<view wx:if="{{pattern}}" class="page preview-page">
+  <view class="main-panel">
+    <view class="summary-card section-card">
+      <view class="summary-head">
+        <view>
+          <view class="summary-kicker">图纸已生成</view>
+          <view class="summary-title">{{pattern.width}} × {{pattern.height}}</view>
+        </view>
+        <view class="summary-badge">{{pattern.board.count}} 块板</view>
+      </view>
+      <view class="summary-grid">
+        <view class="summary-item">
+          <view class="summary-value">{{pattern.palette.length}}</view>
+          <view class="summary-label">颜色</view>
+        </view>
+        <view class="summary-item">
+          <view class="summary-value">{{pattern.totalBeads}}</view>
+          <view class="summary-label">豆子</view>
+        </view>
+        <view class="summary-item">
+          <view class="summary-value">{{pattern.board.columns}}×{{pattern.board.rows}}</view>
+          <view class="summary-label">分板</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="pattern-card section-card">
+      <view class="card-head">
+        <view>
+          <view class="card-title">完整图纸</view>
+          <view class="card-desc">自动适配展示区，深色线为底板边界</view>
+        </view>
+      </view>
+
+      <view class="grid-frame" style="height: {{boardHeight}}rpx;">
+        <view class="pattern-board" style="height: {{boardHeight}}rpx;">
+          <block wx:for="{{rows}}" wx:key="key" wx:for-item="row">
+            <view class="pattern-row">
+              <block wx:for="{{row.cells}}" wx:key="key" wx:for-item="cell">
+                <view
+                  class="pattern-cell {{selectedColorId && selectedColorId !== cell.colorId ? 'dimmed' : ''}}"
+                  style="background-color: {{viewMode === 'symbol' ? '#ffffff' : cell.hex}}; color: {{viewMode === 'symbol' ? '#2f2a24' : cell.textColor}}; font-size: {{cellSize > 14 ? 12 : 0}}rpx;"
+                  data-color-id="{{cell.colorId}}"
+                  bindtap="showCellInfo"
+                >{{viewMode === 'color' ? '' : cell.symbol}}</view>
+              </block>
+            </view>
+          </block>
+        </view>
+      </view>
+    </view>
+
+    <view class="tools-card section-card">
+      <view class="card-title">操作</view>
+      <view class="mode-buttons">
+        <button class="mode-button {{viewMode === 'mixed' ? 'active' : ''}}" size="mini" data-mode="mixed" bindtap="setViewMode">颜色+符号</button>
+        <button class="mode-button {{viewMode === 'color' ? 'active' : ''}}" size="mini" data-mode="color" bindtap="setViewMode">纯色</button>
+        <button class="mode-button {{viewMode === 'symbol' ? 'active' : ''}}" size="mini" data-mode="symbol" bindtap="setViewMode">符号</button>
+      </view>
+      <view class="action-row">
+        <button class="primary-button export-button" loading="{{exporting}}" disabled="{{exporting}}" bindtap="chooseDownload">
+          {{exporting ? '导出中...' : '下载图纸'}}
+        </button>
+        <button class="ghost-button copy-button" bindtap="copyMaterials">复制清单</button>
+      </view>
+      <view wx:if="{{selectedColorId}}" class="filter-tip">
+        已高亮 {{selectedColorId}}
+        <text class="clear-filter" bindtap="clearFilter">清除</text>
+      </view>
+    </view>
+
+  </view>
+</view>

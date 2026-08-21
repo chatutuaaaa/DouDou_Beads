@@ -1,0 +1,76 @@
+page {
+  min-height: 100vh;
+  color: #29231d;
+  background: linear-gradient(145deg, #fff7ed 0%, #ffe8d5 42%, #f7fbff 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.page {
+  position: relative;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 32rpx;
+  overflow: hidden;
+}
+
+.page::before,
+.page::after {
+  position: fixed;
+  z-index: -1;
+  width: 360rpx;
+  height: 360rpx;
+  border-radius: 50%;
+  content: '';
+  filter: blur(6rpx);
+  opacity: 0.72;
+}
+
+.page::before {
+  top: -120rpx;
+  right: -120rpx;
+  background: rgba(255, 138, 61, 0.26);
+}
+
+.page::after {
+  bottom: 180rpx;
+  left: -160rpx;
+  background: rgba(88, 166, 255, 0.18);
+}
+
+.card {
+  box-sizing: border-box;
+  padding: 28rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.72);
+  border-radius: 32rpx;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 18rpx 60rpx rgba(126, 82, 43, 0.12);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.primary-button {
+  margin: 0;
+  border-radius: 999rpx;
+  color: #ffffff;
+  background: linear-gradient(135deg, #ff8a3d, #f45d48);
+  font-weight: 700;
+  box-shadow: 0 14rpx 32rpx rgba(244, 93, 72, 0.22);
+}
+
+.primary-button[disabled] {
+  color: rgba(255, 255, 255, 0.72);
+  background: #d6c2ad;
+  box-shadow: none;
+}
+
+.ghost-button {
+  margin: 0;
+  border: 2rpx solid rgba(242, 212, 183, 0.9);
+  border-radius: 999rpx;
+  color: #7a4d2f;
+  background: rgba(255, 250, 244, 0.8);
+}
+
+.muted {
+  color: #8c7c6b;
+}
