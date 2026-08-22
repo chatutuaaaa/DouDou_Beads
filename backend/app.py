@@ -50,6 +50,16 @@ def add_headers(response):
     return response
 
 
+@app.route("/", methods=["GET"])
+def root():
+    return success({"status": "ok", "service": "doudoutu"})
+
+
+@app.route("/__tcb_probe__", methods=["GET"])
+def tcb_probe():
+    return "ok", 200
+
+
 @app.route("/api/health", methods=["GET"])
 def health():
     return success({"status": "ok"})
