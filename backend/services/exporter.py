@@ -21,7 +21,7 @@ def export_pattern(pattern, file_format):
         extension = "png"
 
     buffer.seek(0)
-    return buffer, mime_type, f"bead-pattern-{pattern['id']}.{extension}"
+    return buffer, mime_type, f"doudoutu-{pattern['id']}.{extension}"
 
 
 def render_pattern_image(pattern):
@@ -60,7 +60,7 @@ def render_pattern_image(pattern):
         outline="#efdcc8",
         width=2,
     )
-    draw_text(draw, (margin, 50), "拼豆图纸", fill="#2f2a24", font=title_font)
+    draw_text(draw, (margin, 50), "豆豆图", fill="#2f2a24", font=title_font)
     summary = (
         f"尺寸 {width}×{height}　总豆数 {pattern['totalBeads']}　"
         f"颜色 {len(pattern['palette'])}　底板 {pattern['board']['count']} 块"

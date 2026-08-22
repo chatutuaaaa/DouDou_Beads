@@ -25,7 +25,7 @@ Page({
     if (!pattern) {
       wx.showModal({
         title: '暂无图纸',
-        content: '请先上传图片生成拼豆图纸。',
+        content: '请先上传图片生成豆豆图。',
         showCancel: false,
         success: () => wx.redirectTo({ url: '/pages/index/index' })
       })
@@ -172,7 +172,7 @@ Page({
   copyMaterials() {
     const pattern = this.data.pattern
     const lines = [
-      `拼豆图纸：${pattern.width}×${pattern.height}`,
+      `豆豆图：${pattern.width}×${pattern.height}`,
       `底板：${pattern.board.count} 块 ${pattern.board.size}×${pattern.board.size}`,
       `总豆数：${pattern.totalBeads} 颗`,
       ...this.data.palette.map((color) => `${color.symbol} ${color.name}(${color.id})：${color.count} 颗，建议 ${color.suggestCount} 颗`)

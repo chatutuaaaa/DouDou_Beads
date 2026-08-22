@@ -11,7 +11,7 @@ from services.users import get_user, get_user_stats, init_db, login_by_code, upd
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024
-app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY", "dev-bead-pattern-secret")
+app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY", "doudoutu-dev-secret")
 app.json.ensure_ascii = False
 serializer = URLSafeTimedSerializer(app.config["SECRET_KEY"])
 init_db()
@@ -192,7 +192,7 @@ def read_token(token):
 def public_user(user):
     return {
         "openidMasked": user["openidMasked"],
-        "nickname": user.get("nickname", "拼豆用户"),
+        "nickname": user.get("nickname", "豆豆图用户"),
         "avatarUrl": user.get("avatarUrl", ""),
         "firstSeen": user["firstSeen"],
         "lastSeen": user["lastSeen"],

@@ -113,7 +113,7 @@ def upsert_user(openid, session_key, unionid, profile):
     return {
         "openid": openid,
         "openidMasked": mask_openid(openid),
-        "nickname": nickname or "拼豆用户",
+        "nickname": nickname or "豆豆图用户",
         "avatarUrl": avatar_url or "",
         "firstSeen": first_seen,
         "lastSeen": now,
@@ -134,7 +134,7 @@ def get_user(openid):
     return {
         "openid": row["openid"],
         "openidMasked": mask_openid(row["openid"]),
-        "nickname": row["nickname"] or "拼豆用户",
+        "nickname": row["nickname"] or "豆豆图用户",
         "avatarUrl": row["avatar_url"] or "",
         "firstSeen": row["first_seen"],
         "lastSeen": row["last_seen"],

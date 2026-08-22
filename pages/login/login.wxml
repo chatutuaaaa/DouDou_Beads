@@ -2,9 +2,9 @@
   <view class="login-shell">
     <view class="hero-card">
       <view class="hero-icon">豆</view>
-      <view class="brand-badge">Bead Pattern</view>
+      <view class="brand-badge">DOUDOUTU</view>
       <view class="brand-title">豆豆图</view>
-      <view class="brand-desc">把喜欢的图片变成可制作的拼豆图纸</view>
+      <view class="brand-desc">把喜欢的图片变成可制作的豆豆图</view>
     </view>
 
     <view class="profile-card">

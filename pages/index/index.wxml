@@ -4,7 +4,7 @@
       <image wx:if="{{user.avatarUrl}}" class="profile-avatar" src="{{user.avatarUrl}}" mode="aspectFill"></image>
       <view wx:else class="profile-avatar fallback-avatar">{{defaultAvatarText}}</view>
       <view class="profile-info">
-        <view class="profile-name">{{user.nickname || '拼豆用户'}}</view>
+        <view class="profile-name">{{user.nickname || '豆豆图用户'}}</view>
         <view class="profile-meta">已登录 · {{user.openidMasked}}</view>
       </view>
     </view>
