@@ -2,6 +2,8 @@ import base64
 import binascii
 import io
 import os
+import urllib.parse
+import urllib.request
 from functools import wraps
 
 try:
@@ -178,13 +180,18 @@ def generate():
     image_stream = None
     if request.is_json:
         body = request.get_json(silent=True) or {}
-        image_b64 = (body.get("image") or "").split(",")[-1]
-        if not image_b64:
+        image_raw = body.get("image") or ""
+        image_b64 = image_raw.split(",")[-1] if image_raw else ""
+        image_url = (body.get("imageUrl") or "").strip()
+        if not image_b64 and not image_url:
             return failure("请上传图片", 400)
         try:
-            image_stream = io.BytesIO(base64.b64decode(image_b64, validate=True))
-        except (binascii.Error, ValueError):
-            return failure("图片数据无效", 400)
+            if image_url:
+                image_stream = download_remote_image(image_url)
+            else:
+                image_stream = io.BytesIO(base64.b64decode(image_b64, validate=True))
+        except (binascii.Error, ValueError) as error:
+            return failure(str(error) if str(error) else "图片数据无效", 400)
         width_default = body.get("width", 29)
         height_default = body.get("height", 29)
         max_colors_default = body.get("max_colors", 12)
@@ -259,6 +266,35 @@ def export_base64(pattern_id):
         "mimeType": mime_type,
         "dataBase64": base64.b64encode(buffer.getvalue()).decode("ascii"),
     })
+
+
+def download_remote_image(image_url):
+    parsed = urllib.parse.urlparse(image_url)
+    if parsed.scheme != "https":
+        raise ValueError("图片链接必须是 HTTPS")
+
+    try:
+        remote_request = urllib.request.Request(
+            image_url,
+            headers={"User-Agent": "DouDouTu/1.0"},
+        )
+        with urllib.request.urlopen(remote_request, timeout=12) as response:
+            content_type = response.headers.get("Content-Type", "").split(";")[0].lower()
+            if content_type and not (content_type.startswith("image/") or content_type == "application/octet-stream"):
+                raise ValueError("图片链接不是有效图片")
+
+            max_size = app.config["MAX_CONTENT_LENGTH"]
+            data = response.read(max_size + 1)
+            if len(data) > max_size:
+                raise ValueError("图片不能超过 8MB")
+            if not data:
+                raise ValueError("图片数据为空")
+            return io.BytesIO(data)
+    except ValueError:
+        raise
+    except Exception as error:
+        app.logger.warning("download remote image failed: %s", error)
+        raise ValueError("图片链接读取失败")
 
 
 def parse_int(name, default, min_value, max_value):

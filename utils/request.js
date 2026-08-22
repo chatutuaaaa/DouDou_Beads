@@ -11,6 +11,7 @@ const isCloudMode = () => !!cloudEnv
 const normalizeError = (error) => {
   if (typeof error === 'string') return new Error(error)
   if (error && error.message) return error
+  if (error && error.errMsg) return new Error(error.errMsg)
   return new Error(NET_ERR)
 }
 
@@ -85,6 +86,51 @@ const callContainer = (options) => new Promise((resolve, reject) => {
 
 const requestJson = (options) => isCloudMode() ? callContainer(options) : httpJson(options)
 
+const cloudExtname = (filePath) => {
+  const match = String(filePath || '').match(/\.([a-zA-Z0-9]+)(?:\?|$)/)
+  return match ? match[1].toLowerCase() : 'jpg'
+}
+
+const uploadImageToCloud = (filePath) => new Promise((resolve, reject) => {
+  const ext = cloudExtname(filePath)
+  const random = Math.random().toString(36).slice(2, 10)
+  const cloudPath = `uploads/${Date.now()}-${random}.${ext}`
+
+  wx.cloud.uploadFile({
+    cloudPath,
+    filePath,
+    success: (res) => resolve(res.fileID),
+    fail: (error) => reject(normalizeError(error))
+  })
+})
+
+const getTempImageUrl = (fileID) => new Promise((resolve, reject) => {
+  wx.cloud.getTempFileURL({
+    fileList: [fileID],
+    success: (res) => {
+      const item = res.fileList && res.fileList[0]
+      if (!item || item.status !== 0 || !item.tempFileURL) {
+        reject(new Error((item && item.errMsg) || '获取图片临时链接失败'))
+        return
+      }
+      resolve(item.tempFileURL)
+    },
+    fail: (error) => reject(normalizeError(error))
+  })
+})
+
+const deleteCloudImage = (fileID) => new Promise((resolve) => {
+  if (!fileID) {
+    resolve()
+    return
+  }
+  wx.cloud.deleteFile({
+    fileList: [fileID],
+    success: () => resolve(),
+    fail: () => resolve()
+  })
+})
+
 // ---------- login ----------
 const loginWithWechat = (profile) => {
   if (isCloudMode()) {
@@ -126,29 +172,25 @@ const updateProfile = (profile) => requestJson({
 })
 
 // ---------- generate ----------
-const readFileAsBase64 = (filePath) => new Promise((resolve, reject) => {
-  wx.getFileSystemManager().readFile({
-    filePath,
-    encoding: 'base64',
-    success: (res) => resolve(res.data),
-    fail: reject
-  })
-})
-
 const generatePattern = (filePath, formData) => {
   if (isCloudMode()) {
-    return readFileAsBase64(filePath).then((b64) => callContainer({
-      url: '/api/generate',
-      method: 'POST',
-      data: {
-        image: `data:image/jpeg;base64,${b64}`,
-        width: formData.width,
-        height: formData.height,
-        max_colors: formData.max_colors,
-        mode: formData.mode,
-        palette: formData.palette
-      }
-    }))
+    return uploadImageToCloud(filePath)
+      .then((fileID) => getTempImageUrl(fileID)
+        .then((imageUrl) => callContainer({
+          url: '/api/generate',
+          method: 'POST',
+          data: {
+            imageUrl,
+            imageFileID: fileID,
+            width: formData.width,
+            height: formData.height,
+            max_colors: formData.max_colors,
+            mode: formData.mode,
+            palette: formData.palette
+          }
+        }))
+        .then((result) => deleteCloudImage(fileID).then(() => result))
+        .catch((error) => deleteCloudImage(fileID).then(() => { throw error })))
   }
 
   return new Promise((resolve, reject) => {
