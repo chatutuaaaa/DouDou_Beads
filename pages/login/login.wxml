@@ -19,12 +19,11 @@
         </view>
       </button>
 
-      <view class="nickname-field">
-        <text class="field-label">昵称</text>
+      <view class="nickname-field" style="width: {{nickname ? 180 + nickname.length * 30 : 132}}rpx;">
         <input
           class="nickname-input"
           type="nickname"
-          placeholder="请输入昵称"
+          placeholder="昵称"
           value="{{nickname}}"
           bindinput="onNicknameInput"
           confirm-type="done"
