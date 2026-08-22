@@ -1,10 +1,13 @@
 import os
+import re
 import sqlite3
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 DB_PATH = DATA_DIR / "app.db"
+MYSQL_UNKNOWN_DATABASE = 1049
+MYSQL_IDENTIFIER_RE = re.compile(r"^[A-Za-z0-9_]+$")
 
 
 def _mysql_config():
@@ -58,6 +61,45 @@ class _SQLiteConnection:
         self.close()
         return False
 
+    def __getattr__(self, name):
+        return getattr(self._conn, name)
+
+
+class _MySQLConnection:
+    def __init__(self, config):
+        import pymysql
+        from pymysql.cursors import DictCursor
+        cfg = dict(config)
+        cfg["cursorclass"] = DictCursor
+        try:
+            self._conn = pymysql.connect(**cfg)
+        except pymysql.err.OperationalError as error:
+            if error.args and error.args[0] == MYSQL_UNKNOWN_DATABASE:
+                _create_mysql_database(pymysql, cfg)
+                self._conn = pymysql.connect(**cfg)
+            else:
+                raise
+
+    @staticmethod
+    def _translate(sql):
+        return sql.replace("?", "%s")
+
+    def execute(self, sql, params=()):
+        cursor = self._conn.cursor()
+        cursor.execute(self._translate(sql), params)
+        return cursor
+
+    def executemany(self, sql, seq):
+        cursor = self._conn.cursor()
+        cursor.executemany(self._translate(sql), seq)
+        return cursor
+
+    def commit(self):
+        self._conn.commit()
+
+    def close(self):
+        self._conn.close()
+
     def __enter__(self):
         return self
 
@@ -71,44 +113,32 @@ class _SQLiteConnection:
         return getattr(self._conn, name)
 
 
-class _MySQLConnection:
-    def __init__(self, config):
-        import pymysql
-        from pymysql.cursors import DictCursor
-        cfg = dict(config)
-        cfg["cursorclass"] = DictCursor
-        self._conn = pymysql.connect(**cfg)
-
-    @staticmethod
-    def _translate(sql):
-        return sql.replace("?", "%s")
-
-    def execute(self, sql, params=()):
-        with self._conn.cursor() as cursor:
-            cursor.execute(self._translate(sql), params)
-            return cursor
-
-    def executemany(self, sql, seq):
-        with self._conn.cursor() as cursor:
-            cursor.executemany(self._translate(sql), seq)
-            return cursor
-
-    def commit(self):
-        self._conn.commit()
-
-    def close(self):
-        self._conn.close()
-
-    def __getattr__(self, name):
-        return getattr(self._conn, name)
-
-
 def get_connection():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     cfg = _mysql_config()
     if cfg:
         return _MySQLConnection(cfg)
     return _SQLiteConnection(DB_PATH)
+
+
+def _create_mysql_database(pymysql, config):
+    database = config.get("database")
+    if not database or not MYSQL_IDENTIFIER_RE.match(database):
+        raise ValueError("MYSQL_DATABASE 只能包含字母、数字和下划线")
+
+    bootstrap_config = dict(config)
+    bootstrap_config.pop("database", None)
+
+    connection = pymysql.connect(**bootstrap_config)
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"CREATE DATABASE IF NOT EXISTS `{database}` "
+                "DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+            )
+        connection.commit()
+    finally:
+        connection.close()
 
 
 def placeholder():
