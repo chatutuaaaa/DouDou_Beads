@@ -1,110 +1,124 @@
-# 豆豆图 MVP
+# wxcloudrun-flask
+[![GitHub license](https://img.shields.io/github/license/WeixinCloud/wxcloudrun-express)](https://github.com/WeixinCloud/wxcloudrun-express)
+![GitHub package.json dependency version (prod)](https://img.shields.io/badge/python-3.7.3-green)
 
-豆豆图是一个微信小程序原生前端 + Python Flask 后端的拼豆图纸生成器。
+微信云托管 python Flask 框架模版，实现简单的计数器读写接口，使用云托管 MySQL 读写、记录计数值。
 
-## 功能
+![](https://qcloudimg.tencent-cloud.cn/raw/be22992d297d1b9a1a5365e606276781.png)
 
-- 微信登录后使用，后端按 `openid` 统计用户数量
-- 登录时可同步微信头像昵称，也可在首页自定义头像和昵称
-- 上传相册或拍摄图片
-- 选择 `29×29` 或 `58×58` 成品尺寸
-- 选择最多 `8/12/16/24` 色
-- 后端自动裁剪、像素化、限色并匹配 Artkal-S 色卡
-- 小程序展示彩色网格、符号网格、分板信息和材料清单
-- 支持点击颜色高亮、复制材料清单
-- 支持导出包含完整图纸和色块清单的 PNG 图片或 PDF 文件
 
-## 启动后端
+## 快速开始
+前往 [微信云托管快速开始页面](https://developers.weixin.qq.com/miniprogram/dev/wxcloudrun/src/basic/guide.html)，选择相应语言的模板，根据引导完成部署。
 
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python app.py
-```
+## 本地调试
+下载代码在本地调试，请参考[微信云托管本地调试指南](https://developers.weixin.qq.com/miniprogram/dev/wxcloudrun/src/guide/debug/)
 
-默认接口地址是 `http://127.0.0.1:5001`，可在 `utils/config.js` 修改。
+## 实时开发
+代码变动时，不需要重新构建和启动容器，即可查看变动后的效果。请参考[微信云托管实时开发指南](https://developers.weixin.qq.com/miniprogram/dev/wxcloudrun/src/guide/debug/dev.html)
 
-## 微信登录配置
+## Dockerfile最佳实践
+请参考[如何提高项目构建效率](https://developers.weixin.qq.com/miniprogram/dev/wxcloudrun/src/scene/build/speed.html)
 
-小程序端通过 `wx.login()` 获取临时 `code`，后端使用 `code2Session` 换取当前小程序下的用户唯一标识 `openid`。微信不会向小程序直接提供用户真实微信号，统计用户数量应使用 `openid`。
+## 目录结构说明
 
-本地未配置密钥时，后端会自动使用模拟 `openid`，方便开发联调。上线前请配置环境变量：
+~~~
+.
+├── Dockerfile dockerfile       dockerfile
+├── README.md README.md         README.md文件
+├── container.config.json       模板部署「服务设置」初始化配置（二开请忽略）
+├── requirements.txt            依赖包文件
+├── config.py                   项目的总配置文件  里面包含数据库 web应用 日志等各种配置
+├── run.py                      flask项目管理文件 与项目进行交互的命令行工具集的入口
+└── wxcloudrun                  app目录
+    ├── __init__.py             python项目必带  模块化思想
+    ├── dao.py                  数据库访问模块
+    ├── model.py                数据库对应的模型
+    ├── response.py             响应结构构造
+    ├── templates               模版目录,包含主页index.html文件
+    └── views.py                执行响应的代码所在模块  代码逻辑处理主要地点  项目大部分代码在此编写
+~~~
 
-```bash
-export WECHAT_APPID="你的小程序 AppID"
-export WECHAT_SECRET="你的小程序 AppSecret"
-export FLASK_SECRET_KEY="用于签发登录 token 的随机长字符串"
-export ADMIN_TOKEN="查看统计接口用的管理密钥"
-```
 
-用户数据默认保存在 `backend/data/app.db`。
 
-## 本地调试小程序
+## 服务 API 文档
 
-1. 用微信开发者工具导入当前目录。
-2. 开启 Flask 后端。
-3. 本地开发时在开发者工具勾选“不校验合法域名、web-view、TLS 版本以及 HTTPS 证书”。
-4. 真机和上线前，将 Flask 部署到 HTTPS 域名，并在小程序后台配置 request/uploadFile 合法域名。
+### `GET /api/count`
 
-## 接口
+获取当前计数
 
-### `POST /api/generate`
+#### 请求参数
 
-需要请求头：
+无
 
-```text
-Authorization: Bearer <登录后返回的 token>
-```
+#### 响应结果
 
-表单字段：
+- `code`：错误码
+- `data`：当前计数值
 
-- `image`：上传图片文件
-- `width`：图纸宽度，当前前端传 `29` 或 `58`
-- `height`：图纸高度，当前前端传 `29` 或 `58`
-- `max_colors`：最多颜色数
-- `mode`：`clean` 或 `natural`
-- `palette`：当前默认为 `artkal_s`
-
-返回字段包含：
-
-- `grid`：二维颜色编号矩阵
-- `palette`：实际使用颜色、符号、数量和建议备货数
-- `board`：29×29 底板切分信息
-- `totalBeads`：总豆数
-
-### `GET /api/patterns/<pattern_id>/export?format=png|pdf`
-
-导出完整图纸文件，包含网格图纸、底板分割线和色块清单。
-
-需要请求头：
-
-```text
-Authorization: Bearer <登录后返回的 token>
-```
-
-小程序端点击“下载图纸”后可选择：
-
-- 保存 PNG 图片到相册
-- 打开 PDF 图纸，并通过右上角菜单转发或保存
-
-### `POST /api/auth/login`
-
-请求 JSON：
+##### 响应结果示例
 
 ```json
 {
-  "code": "wx.login 返回的 code"
+  "code": 0,
+  "data": 42
 }
 ```
 
-返回登录 `token` 和脱敏用户信息。
+#### 调用示例
 
-### `GET /api/admin/stats`
-
-返回用户总数。若配置了 `ADMIN_TOKEN`，需要请求头：
-
-```text
-X-Admin-Token: <ADMIN_TOKEN>
 ```
+curl https://<云托管服务域名>/api/count
+```
+
+
+
+### `POST /api/count`
+
+更新计数，自增或者清零
+
+#### 请求参数
+
+- `action`：`string` 类型，枚举值
+  - 等于 `"inc"` 时，表示计数加一
+  - 等于 `"clear"` 时，表示计数重置（清零）
+
+##### 请求参数示例
+
+```
+{
+  "action": "inc"
+}
+```
+
+#### 响应结果
+
+- `code`：错误码
+- `data`：当前计数值
+
+##### 响应结果示例
+
+```json
+{
+  "code": 0,
+  "data": 42
+}
+```
+
+#### 调用示例
+
+```
+curl -X POST -H 'content-type: application/json' -d '{"action": "inc"}' https://<云托管服务域名>/api/count
+```
+
+## 使用注意
+如果不是通过微信云托管控制台部署模板代码，而是自行复制/下载模板代码后，手动新建一个服务并部署，需要在「服务设置」中补全以下环境变量，才可正常使用，否则会引发无法连接数据库，进而导致部署失败。
+- MYSQL_ADDRESS
+- MYSQL_PASSWORD
+- MYSQL_USERNAME
+以上三个变量的值请按实际情况填写。如果使用云托管内MySQL，可以在控制台MySQL页面获取相关信息。
+
+
+
+## License
+
+[MIT](./LICENSE)
