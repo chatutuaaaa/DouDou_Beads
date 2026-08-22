@@ -1,6 +1,13 @@
 import os
 from functools import wraps
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+
 from flask import Flask, jsonify, request, send_file
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
@@ -8,6 +15,12 @@ from services.generator import generate_pattern
 from services.exporter import export_pattern
 from services.patterns import count_patterns, get_pattern_for_user, init_pattern_db, save_pattern
 from services.users import get_user, get_user_stats, init_db, login_by_code, update_user_profile
+from services.guests import (
+    consume_trial,
+    create_guest,
+    get_guest,
+    init_guest_db,
+)
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024
@@ -16,6 +29,7 @@ app.json.ensure_ascii = False
 serializer = URLSafeTimedSerializer(app.config["SECRET_KEY"])
 init_db()
 init_pattern_db()
+init_guest_db()
 
 
 @app.after_request
@@ -55,6 +69,14 @@ def login():
         app.logger.exception("wechat login failed")
         return failure("微信登录失败，请稍后重试", 500)
 
+@app.route("/api/auth/guest", methods=["POST", "OPTIONS"])
+def guest_login():
+    if request.method == "OPTIONS":
+        return success({})
+    guest = create_guest()
+    token = create_guest_token(guest["guestId"])
+    return success({"token": token, "user": public_auth_user(guest)})
+
 
 def require_login(view):
     @wraps(view)
@@ -74,6 +96,13 @@ def require_login(view):
         except BadSignature:
             return failure("登录状态无效，请重新登录", 401)
 
+        if payload.get("gid"):
+            guest = get_guest(payload.get("gid"))
+            if not guest:
+                return failure("试用已失效，请重新登录", 401)
+            request.current_user = guest
+            return view(*args, **kwargs)
+
         user = get_user(payload.get("openid"))
         if not user:
             return failure("用户不存在，请重新登录", 401)
@@ -87,7 +116,7 @@ def require_login(view):
 @app.route("/api/auth/me", methods=["GET"])
 @require_login
 def me():
-    return success({"user": public_user(request.current_user)})
+    return success({"user": public_auth_user(request.current_user)})
 
 
 @app.route("/api/auth/profile", methods=["POST", "OPTIONS"])
@@ -131,8 +160,17 @@ def generate():
         max_colors = get_int("max_colors", 12, 2, 32)
         mode = request.form.get("mode", "clean")
         palette = request.form.get("palette", "artkal_s")
+        current_user = request.current_user
+        remaining = None
+        if current_user.get("isGuest"):
+            allowed, remaining = consume_trial(current_user["guestId"])
+            if not allowed:
+                return failure("试用次数已用完，请登录后继续使用", 403)
+
         data = generate_pattern(image.stream, width, height, max_colors, mode, palette)
-        save_pattern(request.current_user["openid"], data)
+        save_pattern(current_user["openid"], data)
+        if remaining is not None:
+            data["trialRemaining"] = remaining
         return success(data)
     except ValueError as error:
         return failure(str(error), 400)
@@ -184,9 +222,29 @@ def failure(message, status_code):
 def create_token(openid):
     return serializer.dumps({"openid": openid}, salt="wechat-login")
 
+def create_guest_token(guest_id):
+    return serializer.dumps({"gid": guest_id}, salt="wechat-login")
+
 
 def read_token(token):
     return serializer.loads(token, salt="wechat-login", max_age=30 * 24 * 60 * 60)
+
+
+def public_auth_user(user):
+    if user.get("isGuest"):
+        return {
+            "openidMasked": user["openidMasked"],
+            "nickname": user.get("nickname", "试用用户"),
+            "avatarUrl": user.get("avatarUrl", ""),
+            "firstSeen": user["firstSeen"],
+            "lastSeen": user["lastSeen"],
+            "loginCount": 0,
+            "isGuest": True,
+            "trialUsed": user["trialUsed"],
+            "trialLimit": user["trialLimit"],
+            "trialRemaining": user["trialRemaining"],
+        }
+    return public_user(user)
 
 
 def public_user(user):

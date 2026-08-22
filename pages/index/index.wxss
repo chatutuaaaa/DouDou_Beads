@@ -243,3 +243,18 @@
   font-size: 34rpx;
   line-height: 104rpx;
 }
+
+.trial-banner {
+  margin: 0 8rpx 24rpx;
+  padding: 18rpx 24rpx;
+  border-radius: 20rpx;
+  background: #fff2ea;
+  color: #b5532a;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.trial-link {
+  color: #f45d48;
+  font-weight: 600;
+}

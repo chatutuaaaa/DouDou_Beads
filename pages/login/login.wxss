@@ -218,6 +218,25 @@
   line-height: 1;
 }
 
+.guest-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  margin-top: 20rpx;
+  padding: 0;
+  border: 2rpx solid rgba(244, 93, 72, 0.5);
+  border-radius: 24rpx;
+  background: transparent;
+  color: #c44a36;
+  font-size: 28rpx;
+  line-height: 1;
+}
+
+.guest-button::after {
+  border: 0;
+}
+
 .login-tip {
   margin-top: 24rpx;
   padding: 0 12rpx;

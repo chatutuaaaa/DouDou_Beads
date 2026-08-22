@@ -9,6 +9,8 @@
       </view>
     </view>
 
+    <view wx:if="{{user.isGuest}}" class="trial-banner">试用模式：还可生成 {{user.trialRemaining}} 次，<text class="trial-link" bindtap="goLogin">登录后无限制</text></view>
+
     <view class="upload-card section-card" bindtap="chooseImage">
       <view class="upload-box {{imagePath ? 'has-image' : ''}}">
         <image wx:if="{{imagePath}}" class="upload-image" src="{{imagePath}}" mode="aspectFit"></image>

@@ -1,4 +1,4 @@
-const { generatePattern, getStoredUser } = require('../../utils/request')
+const { generatePattern, getStoredUser, isTrialExhausted, clearAuth } = require('../../utils/request')
 const { apiBaseUrl } = require('../../utils/config')
 
 const defaultAvatarText = '豆'
@@ -113,10 +113,30 @@ Page({
         wx.setStorageSync('latestPattern', pattern)
         wx.setStorageSync('beadProjects', projects.slice(0, 20))
 
+        if (typeof pattern.trialRemaining === 'number') {
+          this.updateTrialRemaining(pattern.trialRemaining)
+          if (pattern.trialRemaining <= 0) {
+            wx.showToast({ title: '\u8bd5\u7528\u5df2\u7528\u5b8c', icon: 'none' })
+          } else {
+            wx.showToast({ title: '\u8fd8\u53ef\u8bd5\u7528 ' + pattern.trialRemaining + ' \u6b21', icon: 'none' })
+          }
+        }
         wx.navigateTo({ url: '/pages/preview/preview' })
         finish()
       })
       .catch((error) => {
+        if (isTrialExhausted(error)) {
+          clearAuth()
+          wx.showModal({
+            title: '\u8bd5\u7528\u6b21\u6570\u5df2\u7528\u5b8c',
+            content: '\u767b\u5f55\u540e\u5373\u53ef\u7ee7\u7eed\u751f\u6210\u56fe\u7eb8\u3002',
+            confirmText: '\u53bb\u767b\u5f55',
+            showCancel: false,
+            success: () => wx.reLaunch({ url: '/pages/login/login' })
+          })
+          finish()
+          return
+        }
         wx.showModal({
           title: '生成失败',
           content: error.message || '请确认 Flask 后端已启动，并检查接口地址。',
@@ -129,5 +149,20 @@ Page({
   getFileName(path) {
     const parts = path.split('/')
     return parts[parts.length - 1] || '已选择图片'
+  },
+
+  updateTrialRemaining(remaining) {
+    const user = this.data.user
+    if (!user || !user.isGuest) return
+    const updated = Object.assign({}, user, { trialRemaining: remaining, trialUsed: user.trialLimit - remaining })
+    this.setData({ user: updated })
+    wx.setStorageSync('authUser', updated)
+    getApp().globalData.authUser = updated
+  },
+
+  goLogin() {
+    clearAuth()
+    wx.reLaunch({ url: '/pages/login/login' })
   }
+
 })

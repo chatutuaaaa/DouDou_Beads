@@ -37,6 +37,8 @@
       {{loggingIn ? '登录中...' : '登录'}}
     </button>
 
+    <button class="guest-button" disabled="{{loggingIn}}" bindtap="loginAsGuest">试用</button>
+
     <view class="login-tip">登录后即可上传图片生成图纸；头像昵称仅用于展示，用户统计使用 openid。</view>
   </view>
 </view>

@@ -1,4 +1,4 @@
-const { getStoredUser, loginWithWechat } = require('../../utils/request')
+const { getStoredUser, loginAsGuest, loginWithWechat, isTrialExhausted } = require('../../utils/request')
 
 const defaultAvatarText = '豆'
 
@@ -88,5 +88,28 @@ Page({
         wx.hideLoading()
         this.setData({ loggingIn: false })
       })
+  },
+
+  loginAsGuest() {
+    if (this.data.loggingIn) return
+    this.setData({ loggingIn: true })
+    wx.showLoading({ title: '\u8bd5\u7528\u4e2d' })
+    loginAsGuest()
+      .then((auth) => {
+        getApp().globalData.authUser = auth.user
+        wx.reLaunch({ url: '/pages/index/index' })
+      })
+      .catch((error) => {
+        wx.showModal({
+          title: '\u8bd5\u7528\u5931\u8d25',
+          content: error.message || '\u7f51\u7edc\u5f02\u5e38\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5',
+          showCancel: false
+        })
+      })
+      .then(() => {
+        wx.hideLoading()
+        this.setData({ loggingIn: false })
+      })
   }
+
 })

@@ -91,6 +91,21 @@ const loginWithWechat = (profile) => {
   })
 }
 
+const TRIAL_EXHAUSTED_MSG = "\u8bd5\u7528\u6b21\u6570\u5df2\u7528\u5b8c\uff0c\u8bf7\u767b\u5f55\u540e\u7ee7\u7eed\u4f7f\u7528"
+
+const isTrialExhausted = (error) => !!error && error.message === TRIAL_EXHAUSTED_MSG
+
+const loginAsGuest = () => {
+  return requestJson({
+    url: "/api/auth/guest",
+    method: "POST",
+    data: {}
+  }).then((auth) => {
+    setAuth(auth)
+    return auth
+  })
+}
+
 const updateProfile = (profile) => {
   return requestJson({
     url: '/api/auth/profile',
@@ -168,6 +183,8 @@ module.exports = {
   generatePattern,
   getAuthToken,
   getStoredUser,
+  isTrialExhausted,
+  loginAsGuest,
   loginWithWechat,
   updateProfile
 }
