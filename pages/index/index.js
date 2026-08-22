@@ -1,4 +1,4 @@
-const { generatePattern, getStoredUser, isTrialExhausted, clearAuth } = require('../../utils/request')
+const { generatePattern, getStoredUser, isTrialExhausted, clearAuth, isCloudMode } = require('../../utils/request')
 const { apiBaseUrl } = require('../../utils/config')
 
 const defaultAvatarText = '豆'
@@ -26,7 +26,10 @@ Page({
   },
 
   onShow() {
-    const user = getStoredUser()
+    let user = getStoredUser()
+    if (!user && isCloudMode()) {
+      user = { isCloud: true, nickname: '豆豆图用户', openidMasked: 'cloud-user' }
+    }
     if (!user) {
       wx.reLaunch({ url: '/pages/login/login' })
       return

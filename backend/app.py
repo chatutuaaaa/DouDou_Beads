@@ -1,3 +1,6 @@
+import base64
+import binascii
+import io
 import os
 from functools import wraps
 
@@ -14,7 +17,14 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from services.generator import generate_pattern
 from services.exporter import export_pattern
 from services.patterns import count_patterns, get_pattern_for_user, init_pattern_db, save_pattern
-from services.users import get_user, get_user_stats, init_db, login_by_code, update_user_profile
+from services.users import (
+    ensure_user,
+    get_user,
+    get_user_stats,
+    init_db,
+    login_by_code,
+    update_user_profile,
+)
 from services.guests import (
     consume_trial,
     create_guest,
@@ -84,6 +94,11 @@ def require_login(view):
         if request.method == "OPTIONS":
             return view(*args, **kwargs)
 
+        cloud_openid = request.headers.get("X-WX-OPENID", "").strip()
+        if cloud_openid:
+            request.current_user = ensure_user(cloud_openid)
+            return view(*args, **kwargs)
+
         auth_header = request.headers.get("Authorization", "")
         token = auth_header.replace("Bearer ", "", 1).strip()
         if not token:
@@ -150,16 +165,36 @@ def generate():
     if request.method == "OPTIONS":
         return success({})
 
-    image = request.files.get("image")
-    if not image:
-        return failure("请上传图片", 400)
+    image_stream = None
+    if request.is_json:
+        body = request.get_json(silent=True) or {}
+        image_b64 = (body.get("image") or "").split(",")[-1]
+        if not image_b64:
+            return failure("请上传图片", 400)
+        try:
+            image_stream = io.BytesIO(base64.b64decode(image_b64, validate=True))
+        except (binascii.Error, ValueError):
+            return failure("图片数据无效", 400)
+        width_default = body.get("width", 29)
+        height_default = body.get("height", 29)
+        max_colors_default = body.get("max_colors", 12)
+        mode_default = body.get("mode", "clean")
+        palette_default = body.get("palette", "artkal_s")
+    else:
+        image = request.files.get("image")
+        if not image:
+            return failure("请上传图片", 400)
+        image_stream = image.stream
+        width_default = height_default = max_colors_default = None
+        mode_default = "clean"
+        palette_default = "artkal_s"
 
     try:
-        width = get_int("width", 29, 8, 120)
-        height = get_int("height", 29, 8, 120)
-        max_colors = get_int("max_colors", 12, 2, 32)
-        mode = request.form.get("mode", "clean")
-        palette = request.form.get("palette", "artkal_s")
+        width = parse_int("width", width_default if width_default is not None else 29, 8, 120)
+        height = parse_int("height", height_default if height_default is not None else 29, 8, 120)
+        max_colors = parse_int("max_colors", max_colors_default if max_colors_default is not None else 12, 2, 32)
+        mode = (mode_default if request.is_json else request.form.get("mode")) or "clean"
+        palette = (palette_default if request.is_json else request.form.get("palette")) or "artkal_s"
         current_user = request.current_user
         remaining = None
         if current_user.get("isGuest"):
@@ -167,7 +202,7 @@ def generate():
             if not allowed:
                 return failure("试用次数已用完，请登录后继续使用", 403)
 
-        data = generate_pattern(image.stream, width, height, max_colors, mode, palette)
+        data = generate_pattern(image_stream, width, height, max_colors, mode, palette)
         save_pattern(current_user["openid"], data)
         if remaining is not None:
             data["trialRemaining"] = remaining
@@ -197,8 +232,30 @@ def export(pattern_id):
     return send_file(buffer, mimetype=mime_type, as_attachment=True, download_name=filename)
 
 
-def get_int(name, default, min_value, max_value):
-    raw_value = request.form.get(name, default)
+@app.route("/api/patterns/<pattern_id>/export-base64", methods=["GET", "OPTIONS"])
+@require_login
+def export_base64(pattern_id):
+    if request.method == "OPTIONS":
+        return success({})
+    file_format = request.args.get("format", "png").lower()
+    if file_format not in ("png", "pdf"):
+        return failure("导出格式仅支持 png 或 pdf", 400)
+    pattern = get_pattern_for_user(request.current_user["openid"], pattern_id)
+    if not pattern:
+        return failure("图纸不存在或无权访问", 404)
+    buffer, mime_type, filename = export_pattern(pattern, file_format)
+    return success({
+        "filename": filename,
+        "mimeType": mime_type,
+        "dataBase64": base64.b64encode(buffer.getvalue()).decode("ascii"),
+    })
+
+
+def parse_int(name, default, min_value, max_value):
+    if request.is_json:
+        raw_value = (request.get_json(silent=True) or {}).get(name, default)
+    else:
+        raw_value = request.form.get(name, default)
 
     try:
         value = int(raw_value)

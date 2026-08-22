@@ -1,4 +1,4 @@
-const { getStoredUser, loginAsGuest, loginWithWechat, isTrialExhausted } = require('../../utils/request')
+const { getStoredUser, loginAsGuest, loginWithWechat, isTrialExhausted, isCloudMode } = require('../../utils/request')
 
 const defaultAvatarText = '豆'
 
@@ -11,6 +11,11 @@ Page({
   },
 
   onShow() {
+    if (isCloudMode()) {
+      getApp().globalData.authUser = { isCloud: true }
+      wx.reLaunch({ url: '/pages/index/index' })
+      return
+    }
     const user = getStoredUser()
     if (user) {
       getApp().globalData.authUser = user
