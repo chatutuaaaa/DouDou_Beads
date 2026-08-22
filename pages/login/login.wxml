@@ -1,7 +1,7 @@
 <view class="page login-page">
   <view class="login-shell">
     <view class="hero-card">
-      <view class="hero-icon">豆</view>
+      <view class="hero-icon"><image class="hero-logo" src="/assets/logo.jpg" mode="aspectFill"></image></view>
       <view class="brand-badge">DOUDOUTU</view>
       <view class="brand-title">豆豆图</view>
       <view class="brand-desc">把喜欢的图片变成可制作的豆豆图</view>

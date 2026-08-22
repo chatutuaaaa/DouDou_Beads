@@ -50,19 +50,21 @@
 
 .hero-icon {
   position: relative;
-  width: 112rpx;
-  height: 112rpx;
+  width: 128rpx;
+  height: 128rpx;
   margin: 0 auto 24rpx;
   border: 4rpx solid rgba(48, 40, 32, 0.88);
-  border-radius: 32rpx;
-  color: #ffffff;
-  background: linear-gradient(135deg, #ff8a3d, #f45d48);
+  border-radius: 36rpx;
+  overflow: hidden;
+  background: #ffffff;
   box-shadow: 0 16rpx 34rpx rgba(244, 93, 72, 0.26);
-  font-size: 42rpx;
-  font-weight: 900;
-  line-height: 104rpx;
-  text-align: center;
   transform: rotate(-6deg);
+}
+
+.hero-logo {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .brand-badge {
