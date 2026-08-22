@@ -4,3 +4,5 @@ project.private.config.json
 __pycache__/
 *.pyc
 .DS_Store
+
+backend/flask.*.log

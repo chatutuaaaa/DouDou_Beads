@@ -4,6 +4,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 BOARD_SIZE = 29
+PDF_DPI = 300.0
 
 
 def export_pattern(pattern, file_format):
@@ -11,7 +12,7 @@ def export_pattern(pattern, file_format):
     buffer = BytesIO()
 
     if file_format == "pdf":
-        image.convert("RGB").save(buffer, format="PDF", resolution=150.0)
+        image.convert("RGB").save(buffer, format="PDF", resolution=PDF_DPI)
         mime_type = "application/pdf"
         extension = "pdf"
     else:
@@ -26,30 +27,45 @@ def export_pattern(pattern, file_format):
 def render_pattern_image(pattern):
     width = pattern["width"]
     height = pattern["height"]
-    cell_size = 18 if max(width, height) <= 60 else 12
-    margin = 48
-    header_height = 136
-    legend_item_height = 42
+    max_dimension = max(width, height)
+    if max_dimension <= 32:
+        cell_size = 30
+    elif max_dimension <= 60:
+        cell_size = 24
+    else:
+        cell_size = 18
+    margin = 56
+    header_height = 150
+    legend_item_height = 44
     legend_columns = 2
     legend_rows = (len(pattern["palette"]) + legend_columns - 1) // legend_columns
-    legend_height = 88 + legend_rows * legend_item_height
+    legend_height = 96 + legend_rows * legend_item_height
     chart_width = width * cell_size
     chart_height = height * cell_size
-    image_width = max(960, chart_width + margin * 2)
+    image_width = max(1200, chart_width + margin * 2)
     image_height = margin + header_height + chart_height + legend_height + margin
 
     image = Image.new("RGB", (image_width, image_height), "#fffaf4")
     draw = ImageDraw.Draw(image)
-    title_font = load_font(34)
-    text_font = load_font(22)
-    small_font = load_font(16)
-    symbol_font = load_font(11)
+    title_font = load_font(38)
+    text_font = load_font(24)
+    small_font = load_font(19)
+    symbol_font = load_font(max(13, cell_size // 2 + 2))
     palette_map = {color["id"]: color for color in pattern["palette"]}
 
-    draw.rounded_rectangle((24, 24, image_width - 24, image_height - 24), radius=28, fill="#ffffff", outline="#efdcc8", width=2)
-    draw_text(draw, (margin, 46), "拼豆图纸", fill="#2f2a24", font=title_font)
-    summary = f"尺寸 {width}×{height}｜总豆数 {pattern['totalBeads']}｜颜色 {len(pattern['palette'])}｜底板 {pattern['board']['count']} 块"
-    draw_text(draw, (margin, 92), summary, fill="#7b6856", font=text_font)
+    draw.rounded_rectangle(
+        (28, 28, image_width - 28, image_height - 28),
+        radius=32,
+        fill="#ffffff",
+        outline="#efdcc8",
+        width=2,
+    )
+    draw_text(draw, (margin, 50), "拼豆图纸", fill="#2f2a24", font=title_font)
+    summary = (
+        f"尺寸 {width}×{height}　总豆数 {pattern['totalBeads']}　"
+        f"颜色 {len(pattern['palette'])}　底板 {pattern['board']['count']} 块"
+    )
+    draw_text(draw, (margin, 104), summary, fill="#7b6856", font=text_font)
 
     chart_left = (image_width - chart_width) // 2
     chart_top = margin + header_height
@@ -61,24 +77,27 @@ def render_pattern_image(pattern):
             top = chart_top + row_index * cell_size
             right = left + cell_size
             bottom = top + cell_size
-            draw.rectangle((left, top, right, bottom), fill=color["hex"], outline="#cdb8a3")
+            draw.rectangle((left, top, right, bottom), fill=color["hex"], outline="#d6c4b0")
 
-            if cell_size >= 16:
+            if cell_size >= 18:
                 symbol = color["symbol"]
                 bbox = draw.textbbox((0, 0), symbol, font=symbol_font)
                 text_width = bbox[2] - bbox[0]
                 text_height = bbox[3] - bbox[1]
                 draw_text(
                     draw,
-                    (left + (cell_size - text_width) / 2, top + (cell_size - text_height) / 2 - 1),
+                    (
+                        left + (cell_size - text_width) / 2 - bbox[0],
+                        top + (cell_size - text_height) / 2 - bbox[1] - 1,
+                    ),
                     symbol,
                     fill=text_color(color["rgb"]),
-                    font=symbol_font
+                    font=symbol_font,
                 )
 
     draw_board_lines(draw, chart_left, chart_top, width, height, cell_size)
 
-    legend_top = chart_top + chart_height + 44
+    legend_top = chart_top + chart_height + 48
     draw_text(draw, (margin, legend_top), "色块清单", fill="#2f2a24", font=title_font)
     item_width = (image_width - margin * 2) // legend_columns
 
@@ -86,10 +105,19 @@ def render_pattern_image(pattern):
         column = index % legend_columns
         row = index // legend_columns
         x = margin + column * item_width
-        y = legend_top + 54 + row * legend_item_height
-        draw.rounded_rectangle((x, y, x + 28, y + 28), radius=6, fill=color["hex"], outline="#b9aa9a", width=1)
-        label = f"{color['symbol']} {color['name']} {color['id']}：{color['count']}颗，备{color['suggestCount']}颗"
-        draw_text(draw, (x + 40, y + 3), label, fill="#4a3b2d", font=small_font)
+        y = legend_top + 60 + row * legend_item_height
+        draw.rounded_rectangle(
+            (x, y, x + 30, y + 30),
+            radius=6,
+            fill=color["hex"],
+            outline="#b9aa9a",
+            width=1,
+        )
+        label = (
+            f"{color['symbol']}  {color['name']}  {color['id']}："
+            f"{color['count']} 颗，备 {color['suggestCount']} 颗"
+        )
+        draw_text(draw, (x + 44, y + 4), label, fill="#4a3b2d", font=small_font)
 
     return image
 
@@ -108,16 +136,23 @@ def draw_board_lines(draw, left, top, width, height, cell_size):
 
 def load_font(size):
     font_paths = [
+        "C:/Windows/Fonts/msyh.ttc",
+        "C:/Windows/Fonts/msyhbd.ttc",
+        "C:/Windows/Fonts/simhei.ttf",
+        "C:/Windows/Fonts/simsun.ttc",
         "/System/Library/Fonts/PingFang.ttc",
         "/System/Library/Fonts/STHeiti Light.ttc",
         "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
         "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     ]
 
     for font_path in font_paths:
         if Path(font_path).exists():
-            return ImageFont.truetype(font_path, size=size)
+            try:
+                return ImageFont.truetype(font_path, size=size)
+            except OSError:
+                continue
 
     return ImageFont.load_default()
 
