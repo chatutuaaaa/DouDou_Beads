@@ -121,8 +121,9 @@ X-Admin-Token: <ADMIN_TOKEN>
    - `ADMIN_TOKEN`：统计接口口令（可选）
 
 ### 2. 部署后端
-- 代码已包含 `backend/Dockerfile`（基于 `python:3.11-slim`，内置 Noto CJK 中文字体，用 gunicorn 启动）。
-- 在云托管控制台用本仓库的 `backend` 目录部署，或绑定 GitHub 自动构建；服务监听端口使用云托管注入的 `PORT`（默认 80）。
+- 代码已包含仓库根目录 `Dockerfile`，适合微信云托管从 GitHub 仓库根目录自动构建。
+- 根目录 `Dockerfile` 会复制 `backend` 目录并启动 Flask 服务；服务监听端口使用云托管注入的 `PORT`（默认 80）。
+- `backend/Dockerfile` 保留给只选择 `backend` 子目录作为构建上下文的部署方式。
 - 镜像内不含 `.env`，所有密钥通过控制台环境变量配置。
 
 ### 3. 小程序配置

@@ -1,0 +1,11 @@
+.git
+.gitignore
+README.md
+project.private.config.json
+backend/.venv
+backend/__pycache__
+backend/services/__pycache__
+backend/data/*.db
+*.pyc
+.DS_Store
+node_modules
