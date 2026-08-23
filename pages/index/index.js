@@ -112,6 +112,7 @@ Page({
         }
 
         projects.unshift(project)
+        getApp().globalData.latestPattern = pattern
         wx.setStorageSync('latestPattern', pattern)
         wx.setStorageSync('beadProjects', projects.slice(0, 20))
 
