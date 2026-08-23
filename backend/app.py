@@ -74,7 +74,8 @@ def login():
 
     body = request.get_json(silent=True) or {}
     code = body.get("code")
-    if not code:
+    cloud_openid = request.headers.get("X-WX-OPENID", "").strip()
+    if not code and not cloud_openid:
         return failure("缺少微信登录 code", 400)
 
     try:
@@ -82,7 +83,7 @@ def login():
             "nickname": body.get("nickname", ""),
             "avatarUrl": body.get("avatarUrl", "")
         }
-        user = login_by_code(code, profile)
+        user = ensure_user(cloud_openid, profile) if cloud_openid else login_by_code(code, profile)
         token = create_token(user["openid"])
         return success({"token": token, "user": public_user(user)})
     except ValueError as error:
@@ -104,11 +105,6 @@ def require_login(view):
     @wraps(view)
     def wrapper(*args, **kwargs):
         if request.method == "OPTIONS":
-            return view(*args, **kwargs)
-
-        cloud_openid = request.headers.get("X-WX-OPENID", "").strip()
-        if cloud_openid:
-            request.current_user = ensure_user(cloud_openid)
             return view(*args, **kwargs)
 
         auth_header = request.headers.get("Authorization", "")

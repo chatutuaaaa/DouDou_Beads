@@ -66,10 +66,13 @@ const httpJson = (options) => new Promise((resolve, reject) => {
 })
 
 const callContainer = (options) => new Promise((resolve, reject) => {
+  const token = getAuthToken()
   const header = Object.assign(
     { 'content-type': 'application/json', 'X-WX-SERVICE': cloudService },
     options.header || {}
   )
+  if (token) header.Authorization = `Bearer ${token}`
+
   wx.cloud.callContainer({
     config: { env: cloudEnv },
     path: options.url,
@@ -132,36 +135,32 @@ const deleteCloudImage = (fileID) => new Promise((resolve) => {
 })
 
 // ---------- login ----------
-const loginWithWechat = (profile) => {
-  if (isCloudMode()) {
-    const auth = { token: 'cloud', user: cloudUser() }
-    setAuth(auth)
-    return Promise.resolve(auth)
-  }
-  return new Promise((resolve, reject) => {
-    wx.login({
-      success: (loginRes) => {
-        if (!loginRes.code) {
-          reject(new Error('\u5fae\u4fe1\u767b\u5f55\u5931\u8d25\uff0c\u672a\u83b7\u53d6\u5230 code'))
-          return
-        }
-        requestJson({
-          url: '/api/auth/login',
-          method: 'POST',
-          data: Object.assign({ code: loginRes.code }, profile || {})
-        }).then((auth) => { setAuth(auth); resolve(auth) }).catch(reject)
-      },
-      fail: (error) => reject(normalizeError(error))
-    })
+const loginWithWechat = (profile) => new Promise((resolve, reject) => {
+  wx.login({
+    success: (loginRes) => {
+      if (!loginRes.code && !isCloudMode()) {
+        reject(new Error('\u5fae\u4fe1\u767b\u5f55\u5931\u8d25\uff0c\u672a\u83b7\u53d6\u5230 code'))
+        return
+      }
+      requestJson({
+        url: '/api/auth/login',
+        method: 'POST',
+        data: Object.assign({ code: loginRes.code || 'cloud' }, profile || {})
+      }).then((auth) => { setAuth(auth); resolve(auth) }).catch(reject)
+    },
+    fail: (error) => reject(normalizeError(error))
   })
-}
-
-const cloudUser = () => ({
-  openidMasked: 'cloud-user',
-  nickname: '\u8c46\u8c46\u56fe\u7528\u6237',
-  avatarUrl: '',
-  isCloud: true
 })
+
+const ensureAuthUser = () => {
+  const user = getStoredUser()
+  const token = getAuthToken()
+  if (!user || user.isCloud || token === 'cloud') {
+    clearAuth()
+    return null
+  }
+  return user
+}
 
 const updateProfile = (profile) => requestJson({
   url: '/api/auth/profile', method: 'POST', data: profile || {}
@@ -248,6 +247,7 @@ module.exports = {
   callContainer,
   clearAuth,
   downloadPatternExport,
+  ensureAuthUser,
   generatePattern,
   getAuthToken,
   getStoredUser,

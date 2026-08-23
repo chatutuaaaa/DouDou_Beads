@@ -1,4 +1,4 @@
-const { downloadPatternExport, getStoredUser } = require('../../utils/request')
+const { downloadPatternExport, ensureAuthUser } = require('../../utils/request')
 
 Page({
   data: {
@@ -14,12 +14,14 @@ Page({
   },
 
   onLoad() {
-    if (!getStoredUser()) {
+    const user = ensureAuthUser()
+    if (!user) {
       wx.reLaunch({ url: '/pages/login/login' })
       return
     }
 
     const app = getApp()
+    app.globalData.authUser = user
     const pattern = app.globalData.latestPattern || wx.getStorageSync('latestPattern')
 
     if (!pattern) {
