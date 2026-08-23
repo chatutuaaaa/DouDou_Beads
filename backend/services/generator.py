@@ -193,7 +193,7 @@ def build_palette_result(palette, counts):
                 "name": color["name"],
                 "rgb": color["rgb"],
                 "hex": rgb_to_hex(color["rgb"]),
-                "symbol": SYMBOLS[index] if index < len(SYMBOLS) else str(index + 1),
+                "symbol": color["id"],
                 "count": count,
                 "suggestCount": ceil(count * 1.05),
             }

@@ -114,7 +114,7 @@ def render_pattern_image(pattern):
             width=1,
         )
         label = (
-            f"{color['symbol']}  {color['name']}  {color['id']}："
+            f"{color['id']}："
             f"{color['count']} 颗，备 {color['suggestCount']} 颗"
         )
         draw_text(draw, (x + 44, y + 4), label, fill="#4a3b2d", font=small_font)
