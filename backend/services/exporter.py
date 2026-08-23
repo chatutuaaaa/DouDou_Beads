@@ -95,7 +95,7 @@ def render_pattern_image(pattern):
                     font=symbol_font,
                 )
 
-    draw_board_lines(draw, chart_left, chart_top, width, height, cell_size)
+    draw_board_lines(draw, chart_left, chart_top, width, height, cell_size, pattern['board']['size'])
 
     legend_top = chart_top + chart_height + 48
     draw_text(draw, (margin, legend_top), "色块清单", fill="#2f2a24", font=title_font)
@@ -122,13 +122,13 @@ def render_pattern_image(pattern):
     return image
 
 
-def draw_board_lines(draw, left, top, width, height, cell_size):
+def draw_board_lines(draw, left, top, width, height, cell_size, board_size=BOARD_SIZE):
     right = left + width * cell_size
     bottom = top + height * cell_size
-    for column in range(0, width + 1, BOARD_SIZE):
+    for column in range(0, width + 1, board_size):
         x = left + column * cell_size
         draw.line((x, top, x, bottom), fill="#5b4533", width=2)
-    for row in range(0, height + 1, BOARD_SIZE):
+    for row in range(0, height + 1, board_size):
         y = top + row * cell_size
         draw.line((left, y, right, y), fill="#5b4533", width=2)
     draw.rectangle((left, top, right, bottom), outline="#2f2a24", width=2)

@@ -8,16 +8,18 @@ Page({
     imagePath: '',
     imageName: '',
     sizeOptions: [
-      { label: '29 × 29', desc: '一块板｜新手推荐', width: 29, height: 29 },
-      { label: '58 × 58', desc: '四块板｜细节更好', width: 58, height: 58 }
+      { label: '29 × 29', width: 29, height: 29 },
+      { label: '52 × 52', width: 52, height: 52 },
+      { label: '78 × 78', width: 78, height: 78 },
+      { label: '104 × 104', width: 104, height: 104 }
     ],
-    colorOptions: [8, 12, 16, 24],
+    colorOptions: [12, 24, 36, 48],
     styleOptions: [
       { label: '清晰像素风', value: 'clean', desc: '边缘更明确' },
       { label: '真实还原风', value: 'natural', desc: '更接近原图' }
     ],
     selectedSizeIndex: 0,
-    selectedColorIndex: 1,
+    selectedColorIndex: 0,
     selectedStyleIndex: 0,
     generating: false,
     user: null,

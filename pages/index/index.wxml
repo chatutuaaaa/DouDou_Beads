@@ -36,7 +36,6 @@
             bindtap="selectSize"
           >
             <view class="option-title">{{item.label}}</view>
-            <view class="option-desc">{{item.desc}}</view>
           </view>
         </view>
       </view>

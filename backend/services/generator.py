@@ -18,6 +18,13 @@ SYMBOLS = (
     + ["#", "@", "%", "&", "+", "="]
 )
 BOARD_SIZE = 29
+STANDARD_BOARD_SIZES = (29, 52, 78, 104)
+
+
+def resolve_board_size(width, height):
+    if width == height and width in STANDARD_BOARD_SIZES:
+        return width
+    return BOARD_SIZE
 
 
 def generate_pattern(image_file, width, height, max_colors, mode, palette_name):
@@ -36,6 +43,8 @@ def generate_pattern(image_file, width, height, max_colors, mode, palette_name):
     )
     palette_result = build_palette_result(selected_palette, counts)
 
+    board_size = resolve_board_size(width, height)
+
     return {
         "id": uuid4().hex,
         "createdAt": datetime.now(timezone.utc).isoformat(),
@@ -45,10 +54,10 @@ def generate_pattern(image_file, width, height, max_colors, mode, palette_name):
         "paletteName": palette_name,
         "mode": mode,
         "board": {
-            "size": BOARD_SIZE,
-            "columns": ceil(width / BOARD_SIZE),
-            "rows": ceil(height / BOARD_SIZE),
-            "count": ceil(width / BOARD_SIZE) * ceil(height / BOARD_SIZE),
+            "size": board_size,
+            "columns": ceil(width / board_size),
+            "rows": ceil(height / board_size),
+            "count": ceil(width / board_size) * ceil(height / board_size),
         },
         "palette": palette_result,
         "grid": grid,

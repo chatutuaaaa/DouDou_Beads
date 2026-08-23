@@ -205,7 +205,7 @@ def generate():
     try:
         width = parse_int("width", width_default if width_default is not None else 29, 8, 120)
         height = parse_int("height", height_default if height_default is not None else 29, 8, 120)
-        max_colors = parse_int("max_colors", max_colors_default if max_colors_default is not None else 12, 2, 32)
+        max_colors = parse_int("max_colors", max_colors_default if max_colors_default is not None else 12, 2, 48)
         mode = (mode_default if request.is_json else request.form.get("mode")) or "clean"
         palette = (palette_default if request.is_json else request.form.get("palette")) or "mard_221"
         current_user = request.current_user
