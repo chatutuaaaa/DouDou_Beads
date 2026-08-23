@@ -192,7 +192,7 @@ def generate():
         height_default = body.get("height", 29)
         max_colors_default = body.get("max_colors", 12)
         mode_default = body.get("mode", "clean")
-        palette_default = body.get("palette", "artkal_s")
+        palette_default = body.get("palette", "mard_221")
     else:
         image = request.files.get("image")
         if not image:
@@ -200,14 +200,14 @@ def generate():
         image_stream = image.stream
         width_default = height_default = max_colors_default = None
         mode_default = "clean"
-        palette_default = "artkal_s"
+        palette_default = "mard_221"
 
     try:
         width = parse_int("width", width_default if width_default is not None else 29, 8, 120)
         height = parse_int("height", height_default if height_default is not None else 29, 8, 120)
         max_colors = parse_int("max_colors", max_colors_default if max_colors_default is not None else 12, 2, 32)
         mode = (mode_default if request.is_json else request.form.get("mode")) or "clean"
-        palette = (palette_default if request.is_json else request.form.get("palette")) or "artkal_s"
+        palette = (palette_default if request.is_json else request.form.get("palette")) or "mard_221"
         current_user = request.current_user
         remaining = None
         if current_user.get("isGuest"):

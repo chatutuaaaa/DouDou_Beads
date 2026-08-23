@@ -98,7 +98,7 @@ Page({
       height: size.height,
       max_colors: maxColors,
       mode,
-      palette: 'artkal_s'
+      palette: 'mard_221'
     })
       .then((pattern) => {
         const projects = wx.getStorageSync('beadProjects') || []
