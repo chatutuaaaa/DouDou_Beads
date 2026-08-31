@@ -1,5 +1,6 @@
 const { generatePattern, ensureAuthUser, isTrialExhausted, clearAuth } = require('../../utils/request')
 const { apiBaseUrl } = require('../../utils/config')
+const { enableShareMenu, getDefaultShare, getDefaultTimelineShare } = require('../../utils/share')
 
 const defaultAvatarText = '豆'
 
@@ -28,6 +29,8 @@ Page({
   },
 
   onShow() {
+    enableShareMenu()
+
     const user = ensureAuthUser()
     if (!user) {
       wx.reLaunch({ url: '/pages/login/login' })
@@ -166,6 +169,14 @@ Page({
   goLogin() {
     clearAuth()
     wx.reLaunch({ url: '/pages/login/login' })
+  },
+
+  onShareAppMessage() {
+    return getDefaultShare()
+  },
+
+  onShareTimeline() {
+    return getDefaultTimelineShare()
   }
 
 })

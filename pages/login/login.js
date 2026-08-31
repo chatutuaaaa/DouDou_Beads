@@ -1,4 +1,5 @@
 const { ensureAuthUser, loginAsGuest, loginWithWechat } = require('../../utils/request')
+const { enableShareMenu, getDefaultShare, getDefaultTimelineShare } = require('../../utils/share')
 
 const defaultAvatarText = '豆'
 
@@ -11,6 +12,8 @@ Page({
   },
 
   onShow() {
+    enableShareMenu()
+
     const user = ensureAuthUser()
     if (user) {
       getApp().globalData.authUser = user
@@ -110,6 +113,14 @@ Page({
         wx.hideLoading()
         this.setData({ loggingIn: false })
       })
+  },
+
+  onShareAppMessage() {
+    return getDefaultShare()
+  },
+
+  onShareTimeline() {
+    return getDefaultTimelineShare()
   }
 
 })

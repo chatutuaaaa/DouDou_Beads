@@ -1,4 +1,5 @@
 const { downloadPatternExport, ensureAuthUser } = require('../../utils/request')
+const { enableShareMenu, getPatternShare, getPatternTimelineShare } = require('../../utils/share')
 
 Page({
   data: {
@@ -14,6 +15,8 @@ Page({
   },
 
   onLoad() {
+    enableShareMenu()
+
     const user = ensureAuthUser()
     if (!user) {
       wx.reLaunch({ url: '/pages/login/login' })
@@ -184,5 +187,13 @@ Page({
   getTextColor(rgb) {
     const brightness = (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000
     return brightness > 150 ? '#2f2a24' : '#ffffff'
+  },
+
+  onShareAppMessage() {
+    return getPatternShare(this.data.pattern)
+  },
+
+  onShareTimeline() {
+    return getPatternTimelineShare(this.data.pattern)
   }
 })
