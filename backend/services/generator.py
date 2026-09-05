@@ -1,4 +1,5 @@
 from collections import Counter
+from heapq import nsmallest
 from datetime import datetime, timezone
 from math import atan2, cbrt, ceil, cos, degrees, exp, radians, sin, sqrt
 from uuid import uuid4
@@ -19,6 +20,10 @@ SYMBOLS = (
 )
 BOARD_SIZE = 29
 STANDARD_BOARD_SIZES = (29, 52, 78, 104)
+
+# Number of closest colors kept from the cheap pre-screen pass before
+# ranking them with the precise CIEDE2000 metric.
+CANDIDATE_K = 12
 
 
 def resolve_board_size(width, height):
@@ -117,10 +122,11 @@ def map_image_to_palette(image, palette, max_colors, dither=False):
     pixels = list(image.getdata())
     width, height = image.size
 
-    full_lab = [(color, rgb_to_lab(color["rgb"])) for color in palette]
+    full_lab = [rgb_to_lab(color["rgb"]) for color in palette]
+    pixel_lab = [rgb_to_lab(pixel) for pixel in pixels]
     first_grid = [
-        min(full_lab, key=lambda item, lab=rgb_to_lab(pixel): color_distance(lab, item[1]))[0]["id"]
-        for pixel in pixels
+        nearest_palette_id(lab, palette, full_lab)[0]
+        for lab in pixel_lab
     ]
 
     counts = Counter(first_grid)
@@ -132,16 +138,15 @@ def map_image_to_palette(image, palette, max_colors, dither=False):
     selected_lab = [rgb_to_lab(color["rgb"]) for color in selected]
 
     if dither:
-        grid = floyd_steinberg(pixels, selected, selected_lab, width, height)
+        grid = floyd_steinberg(pixel_lab, selected, selected_lab, width, height)
     else:
         grid = [
-            min(
+            selected[min(
                 range(len(selected_lab)),
-                key=lambda index, lab=rgb_to_lab(pixel): color_distance(lab, selected_lab[index]),
-            )
-            for pixel in pixels
+                key=lambda index, lab=lab: color_distance(lab, selected_lab[index]),
+            )]["id"]
+            for lab in pixel_lab
         ]
-        grid = [selected[index]["id"] for index in grid]
 
     counts = Counter(grid)
     ordered_ids = [color_id for color_id, _count in counts.most_common()]
@@ -151,9 +156,34 @@ def map_image_to_palette(image, palette, max_colors, dither=False):
     return rows, counts, selected
 
 
-def floyd_steinberg(pixels, selected_colors, selected_lab, width, height, strength=0.75):
+def nearest_palette_id(lab, palette, palette_lab, candidate_k=CANDIDATE_K):
+    """Return (color_id, palette_index) for the closest bead color.
+
+    A cheap weighted-Euclidean distance in Lab space first narrows the
+    (often large) palette down to ``candidate_k`` colors; only those are
+    scored with the expensive CIEDE2000 metric. This preserves the match
+    quality while avoiding hundreds of trig-heavy comparisons per pixel.
+    """
+    k = min(candidate_k, len(palette_lab))
+    candidates = nsmallest(
+        k,
+        range(len(palette_lab)),
+        key=lambda index: lab_distance_fast(lab, palette_lab[index]),
+    )
+    best_index = min(candidates, key=lambda index: color_distance(lab, palette_lab[index]))
+    return palette[best_index]["id"], best_index
+
+
+def lab_distance_fast(lab1, lab2):
+    """Weighted Euclidean distance in CIE Lab (cheap pre-screen metric)."""
+    dl = lab1[0] - lab2[0]
+    da = lab1[1] - lab2[1]
+    db = lab1[2] - lab2[2]
+    return dl * dl + da * da + db * db
+
+def floyd_steinberg(pixel_labs, selected_colors, selected_lab, width, height, strength=0.75):
     grid = [""] * (width * height)
-    buffer = [list(rgb_to_lab(pixel)) for pixel in pixels]
+    buffer = [list(lab) for lab in pixel_labs]
 
     for y in range(height):
         for x in range(width):
