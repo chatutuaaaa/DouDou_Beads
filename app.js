@@ -10,8 +10,7 @@ App({
     }
   },
   globalData: {
-    userInfo: null,
-    authUser: null,
     latestPattern: null
   }
 })
+

@@ -34,52 +34,56 @@
   margin-top: 0;
 }
 
-.profile-card {
+.comment-card {
+  padding: 24rpx 28rpx;
+}
+
+.comment-header {
   display: flex;
   align-items: center;
-  min-height: 132rpx;
+  justify-content: space-between;
 }
 
-.profile-avatar {
-  flex: none;
-  width: 104rpx;
-  height: 104rpx;
-  overflow: hidden;
-  border: 4rpx solid rgba(48, 40, 32, 0.86);
-  border-radius: 50%;
-  background: #ffffff;
+.comment-badge {
+  padding: 6rpx 18rpx;
+  border-radius: 999rpx;
+  background: #f45d48;
+  color: #ffffff;
+  font-size: 22rpx;
+  font-weight: 700;
 }
 
-.fallback-avatar {
-  color: #f45d48;
-  font-size: 34rpx;
-  font-weight: 900;
-  line-height: 104rpx;
-  text-align: center;
+.comment-refresh {
+  color: #b5532a;
+  font-size: 23rpx;
 }
 
-.profile-info {
-  flex: 1;
-  min-width: 0;
-  margin-left: 24rpx;
+.comment-body {
+  margin-top: 18rpx;
 }
 
-.profile-name {
-  overflow: hidden;
-  color: #2b2118;
-  font-size: 32rpx;
-  font-weight: 900;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.comment-content {
+  color: #3a2c20;
+  font-size: 29rpx;
+  line-height: 1.65;
 }
 
-.profile-meta {
-  overflow: hidden;
-  margin-top: 10rpx;
+.comment-content.placeholder {
+  color: #a08b78;
+  font-size: 26rpx;
+}
+
+.comment-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  margin-top: 14rpx;
   color: #8a7766;
   font-size: 23rpx;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.comment-song {
+  color: #b5532a;
 }
 
 .upload-card {
@@ -244,17 +248,5 @@
   line-height: 104rpx;
 }
 
-.trial-banner {
-  margin: 0 8rpx 24rpx;
-  padding: 18rpx 24rpx;
-  border-radius: 20rpx;
-  background: #fff2ea;
-  color: #b5532a;
-  font-size: 24rpx;
-  line-height: 1.5;
-}
 
-.trial-link {
-  color: #f45d48;
-  font-weight: 600;
-}
+

@@ -1,15 +1,21 @@
-<view wx:if="{{user}}" class="page home-page">
+<view class="page home-page">
   <view class="main-panel">
-    <view class="profile-card section-card">
-      <image wx:if="{{user.avatarUrl}}" class="profile-avatar" src="{{user.avatarUrl}}" mode="aspectFill"></image>
-      <view wx:else class="profile-avatar fallback-avatar">{{defaultAvatarText}}</view>
-      <view class="profile-info">
-        <view class="profile-name">{{user.nickname || '豆豆图用户'}}</view>
-        <view class="profile-meta">已登录 · {{user.openidMasked}}</view>
+    <view class="comment-card section-card" bindtap="loadComment">
+      <view class="comment-header">
+        <view class="comment-badge">网易云热评</view>
+        <view class="comment-refresh">{{commentLoading ? '加载中…' : '换一条 ›'}}</view>
+      </view>
+      <view wx:if="{{comment}}" class="comment-body">
+        <view class="comment-content">“{{comment.content}}”</view>
+        <view class="comment-footer">
+          <text class="comment-nickname">—— {{comment.nickname}}</text>
+          <text wx:if="{{comment.songName}}" class="comment-song">来自《{{comment.songName}}》</text>
+        </view>
+      </view>
+      <view wx:else class="comment-body">
+        <view class="comment-content placeholder">评论加载中，点点卡片换一条～</view>
       </view>
     </view>
-
-    <view wx:if="{{user.isGuest}}" class="trial-banner">试用模式：还可生成 {{user.trialRemaining}} 次，<text class="trial-link" bindtap="goLogin">登录后无限制</text></view>
 
     <view class="upload-card section-card" bindtap="chooseImage">
       <view class="upload-box {{imagePath ? 'has-image' : ''}}">

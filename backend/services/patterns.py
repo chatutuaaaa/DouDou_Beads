@@ -52,3 +52,18 @@ def count_patterns():
     with get_connection() as connection:
         row = connection.execute("SELECT COUNT(*) AS total FROM patterns").fetchone()
     return row["total"]
+
+
+def save_anonymous_pattern(pattern):
+    save_pattern("anonymous", pattern)
+
+
+def get_pattern(pattern_id):
+    with get_connection() as connection:
+        row = connection.execute(
+            "SELECT data_json FROM patterns WHERE id = ?",
+            (pattern_id,),
+        ).fetchone()
+    if not row:
+        return None
+    return json.loads(row["data_json"])

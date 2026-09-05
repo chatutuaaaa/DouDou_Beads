@@ -1,4 +1,4 @@
-const { downloadPatternExport, ensureAuthUser } = require('../../utils/request')
+const { downloadPatternExport } = require('../../utils/request')
 const { enableShareMenu, getPatternShare, getPatternTimelineShare } = require('../../utils/share')
 
 Page({
@@ -16,15 +16,7 @@ Page({
 
   onLoad() {
     enableShareMenu()
-
-    const user = ensureAuthUser()
-    if (!user) {
-      wx.reLaunch({ url: '/pages/login/login' })
-      return
-    }
-
     const app = getApp()
-    app.globalData.authUser = user
     const pattern = app.globalData.latestPattern || wx.getStorageSync('latestPattern')
 
     if (!pattern) {
@@ -197,3 +189,4 @@ Page({
     return getPatternTimelineShare(this.data.pattern)
   }
 })
+

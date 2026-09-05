@@ -1,4 +1,4 @@
-const SHARE_PATH = '/pages/login/login'
+const SHARE_PATH = '/pages/index/index'
 const SHARE_IMAGE = '/assets/logo.jpg'
 
 const enableShareMenu = () => {

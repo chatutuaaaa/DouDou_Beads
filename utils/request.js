@@ -1,10 +1,7 @@
 const { apiBaseUrl, cloudEnv, cloudService } = require('./config')
 
-const TOKEN_KEY = 'authToken'
-const USER_KEY = 'authUser'
-
-const NET_ERR = '\u7f51\u7edc\u5f02\u5e38\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5'
-const JSON_ERR = '\u540e\u7aef\u8fd4\u56de\u683c\u5f0f\u4e0d\u662f JSON'
+const NET_ERR = '网络异常，请稍后重试'
+const JSON_ERR = '后端返回格式不是 JSON'
 
 const isCloudMode = () => !!cloudEnv
 
@@ -26,37 +23,20 @@ const parseResponse = (rawData) => {
   return rawData
 }
 
-const getAuthToken = () => wx.getStorageSync(TOKEN_KEY) || ''
-const getStoredUser = () => wx.getStorageSync(USER_KEY) || null
-
-const setAuth = (auth) => {
-  wx.setStorageSync(TOKEN_KEY, auth.token)
-  wx.setStorageSync(USER_KEY, auth.user)
-}
-
-const clearAuth = () => {
-  wx.removeStorageSync(TOKEN_KEY)
-  wx.removeStorageSync(USER_KEY)
-}
-
 const assertSuccess = (body, statusCode) => {
   if (statusCode < 200 || statusCode >= 300 || !body || body.code !== 0) {
-    throw new Error((body && body.message) || `\u63a5\u53e3\u5f02\u5e38\uff1a${statusCode}`)
+    throw new Error((body && body.message) || `接口异常：${statusCode}`)
   }
   return body.data
 }
 
 // ---------- HTTP (local) ----------
 const httpJson = (options) => new Promise((resolve, reject) => {
-  const token = getAuthToken()
-  const header = Object.assign({ 'content-type': 'application/json' }, options.header || {})
-  if (token) header.Authorization = `Bearer ${token}`
-
   wx.request({
     url: `${apiBaseUrl}${options.url}`,
     method: options.method || 'GET',
     data: options.data || {},
-    header,
+    header: Object.assign({ 'content-type': 'application/json' }, options.header || {}),
     success: (res) => {
       try { resolve(assertSuccess(parseResponse(res.data), res.statusCode)) }
       catch (e) { reject(e) }
@@ -66,19 +46,15 @@ const httpJson = (options) => new Promise((resolve, reject) => {
 })
 
 const callContainer = (options) => new Promise((resolve, reject) => {
-  const token = getAuthToken()
-  const header = Object.assign(
-    { 'content-type': 'application/json', 'X-WX-SERVICE': cloudService },
-    options.header || {}
-  )
-  if (token) header.Authorization = `Bearer ${token}`
-
   wx.cloud.callContainer({
     config: { env: cloudEnv },
     path: options.url,
     method: options.method || 'GET',
     data: options.data || {},
-    header,
+    header: Object.assign(
+      { 'content-type': 'application/json', 'X-WX-SERVICE': cloudService },
+      options.header || {}
+    ),
     success: (res) => {
       try { resolve(assertSuccess(parseResponse(res.data), res.statusCode)) }
       catch (e) { reject(e) }
@@ -134,41 +110,11 @@ const deleteCloudImage = (fileID) => new Promise((resolve) => {
   })
 })
 
-// ---------- login ----------
-const loginWithWechat = (profile) => new Promise((resolve, reject) => {
-  wx.login({
-    success: (loginRes) => {
-      if (!loginRes.code && !isCloudMode()) {
-        reject(new Error('\u5fae\u4fe1\u767b\u5f55\u5931\u8d25\uff0c\u672a\u83b7\u53d6\u5230 code'))
-        return
-      }
-      requestJson({
-        url: '/api/auth/login',
-        method: 'POST',
-        data: Object.assign({ code: loginRes.code || 'cloud' }, profile || {})
-      }).then((auth) => { setAuth(auth); resolve(auth) }).catch(reject)
-    },
-    fail: (error) => reject(normalizeError(error))
-  })
-})
-
-const ensureAuthUser = () => {
-  const user = getStoredUser()
-  const token = getAuthToken()
-  if (!user || user.isCloud || token === 'cloud') {
-    clearAuth()
-    return null
-  }
-  return user
-}
-
-const updateProfile = (profile) => requestJson({
-  url: '/api/auth/profile', method: 'POST', data: profile || {}
-}).then((data) => {
-  const auth = { token: getAuthToken(), user: data.user }
-  setAuth(auth)
-  return data.user
-})
+// ---------- hot comment ----------
+const fetchHotComment = () => requestJson({
+  url: '/api/hot-comment',
+  method: 'GET'
+}).then((data) => data.comment)
 
 // ---------- generate ----------
 const generatePattern = (filePath, formData) => {
@@ -198,7 +144,6 @@ const generatePattern = (filePath, formData) => {
       filePath,
       name: 'image',
       formData,
-      header: { Authorization: `Bearer ${getAuthToken()}` },
       success: (res) => {
         try { resolve(assertSuccess(parseResponse(res.data), res.statusCode)) }
         catch (e) { reject(e) }
@@ -230,10 +175,9 @@ const downloadPatternExport = (patternId, fileFormat) => {
   return new Promise((resolve, reject) => {
     wx.downloadFile({
       url: `${apiBaseUrl}/api/patterns/${patternId}/export?format=${fileFormat}`,
-      header: { Authorization: `Bearer ${getAuthToken()}` },
       success: (res) => {
         if (res.statusCode < 200 || res.statusCode >= 300) {
-          reject(new Error(`\u5bfc\u51fa\u5931\u8d25\uff1a${res.statusCode}`))
+          reject(new Error(`导出失败：${res.statusCode}`))
           return
         }
         resolve(res.tempFilePath)
@@ -245,16 +189,9 @@ const downloadPatternExport = (patternId, fileFormat) => {
 
 module.exports = {
   callContainer,
-  clearAuth,
   downloadPatternExport,
-  ensureAuthUser,
+  fetchHotComment,
   generatePattern,
-  getAuthToken,
-  getStoredUser,
   isCloudMode,
-  loginAsGuest: () => requestJson({ url: '/api/auth/guest', method: 'POST', data: {} }).then((auth) => { setAuth(auth); return auth }),
-  isTrialExhausted: (error) => !!error && error.message === '\u8bd5\u7528\u6b21\u6570\u5df2\u7528\u5b8c\uff0c\u8bf7\u767b\u5f55\u540e\u7ee7\u7eed\u4f7f\u7528',
-  loginWithWechat,
-  requestJson,
-  updateProfile
+  requestJson
 }

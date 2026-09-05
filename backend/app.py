@@ -4,7 +4,6 @@ import io
 import os
 import urllib.parse
 import urllib.request
-from functools import wraps
 
 try:
     from dotenv import load_dotenv
@@ -14,40 +13,27 @@ except ImportError:
 
 
 from flask import Flask, jsonify, request, send_file
-from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
+from services.comments import fetch_hot_comment
 from services.generator import generate_pattern
 from services.exporter import export_pattern
-from services.patterns import count_patterns, get_pattern_for_user, init_pattern_db, save_pattern
-from services.users import (
-    ensure_user,
-    get_user,
-    get_user_stats,
-    init_db,
-    login_by_code,
-    update_user_profile,
-)
-from services.guests import (
-    consume_trial,
-    create_guest,
-    get_guest,
-    init_guest_db,
+from services.patterns import (
+    count_patterns,
+    get_pattern,
+    init_pattern_db,
+    save_anonymous_pattern,
 )
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024
-app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY", "doudoutu-dev-secret")
 app.json.ensure_ascii = False
-serializer = URLSafeTimedSerializer(app.config["SECRET_KEY"])
-init_db()
 init_pattern_db()
-init_guest_db()
 
 
 @app.after_request
 def add_headers(response):
     response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Admin-Token"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-Admin-Token"
     response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
     return response
 
@@ -67,93 +53,13 @@ def health():
     return success({"status": "ok"})
 
 
-@app.route("/api/auth/login", methods=["POST", "OPTIONS"])
-def login():
-    if request.method == "OPTIONS":
-        return success({})
-
-    body = request.get_json(silent=True) or {}
-    code = body.get("code")
-    cloud_openid = request.headers.get("X-WX-OPENID", "").strip()
-    if not code and not cloud_openid:
-        return failure("缺少微信登录 code", 400)
-
+@app.route("/api/hot-comment", methods=["GET"])
+def hot_comment():
     try:
-        profile = {
-            "nickname": body.get("nickname", ""),
-            "avatarUrl": body.get("avatarUrl", "")
-        }
-        user = ensure_user(cloud_openid, profile) if cloud_openid else login_by_code(code, profile)
-        token = create_token(user["openid"])
-        return success({"token": token, "user": public_user(user)})
-    except ValueError as error:
-        return failure(str(error), 400)
+        return success({"comment": fetch_hot_comment()})
     except Exception:
-        app.logger.exception("wechat login failed")
-        return failure("微信登录失败，请稍后重试", 500)
-
-@app.route("/api/auth/guest", methods=["POST", "OPTIONS"])
-def guest_login():
-    if request.method == "OPTIONS":
-        return success({})
-    guest = create_guest()
-    token = create_guest_token(guest["guestId"])
-    return success({"token": token, "user": public_auth_user(guest)})
-
-
-def require_login(view):
-    @wraps(view)
-    def wrapper(*args, **kwargs):
-        if request.method == "OPTIONS":
-            return view(*args, **kwargs)
-
-        auth_header = request.headers.get("Authorization", "")
-        token = auth_header.replace("Bearer ", "", 1).strip()
-        if not token:
-            return failure("请先登录", 401)
-
-        try:
-            payload = read_token(token)
-        except SignatureExpired:
-            return failure("登录已过期，请重新登录", 401)
-        except BadSignature:
-            return failure("登录状态无效，请重新登录", 401)
-
-        if payload.get("gid"):
-            guest = get_guest(payload.get("gid"))
-            if not guest:
-                return failure("试用已失效，请重新登录", 401)
-            request.current_user = guest
-            return view(*args, **kwargs)
-
-        user = get_user(payload.get("openid"))
-        if not user:
-            return failure("用户不存在，请重新登录", 401)
-
-        request.current_user = user
-        return view(*args, **kwargs)
-
-    return wrapper
-
-
-@app.route("/api/auth/me", methods=["GET"])
-@require_login
-def me():
-    return success({"user": public_auth_user(request.current_user)})
-
-
-@app.route("/api/auth/profile", methods=["POST", "OPTIONS"])
-@require_login
-def profile():
-    if request.method == "OPTIONS":
-        return success({})
-
-    body = request.get_json(silent=True) or {}
-    user = update_user_profile(request.current_user["openid"], body)
-    if not user:
-        return failure("用户不存在，请重新登录", 401)
-
-    return success({"user": public_user(user)})
+        app.logger.exception("fetch hot comment failed")
+        return failure("热评获取失败，请稍后重试", 500)
 
 
 @app.route("/api/admin/stats", methods=["GET"])
@@ -162,13 +68,10 @@ def stats():
     if admin_token and request.headers.get("X-Admin-Token") != admin_token:
         return failure("无权限查看统计", 403)
 
-    data = get_user_stats()
-    data["totalPatterns"] = count_patterns()
-    return success(data)
+    return success({"totalPatterns": count_patterns()})
 
 
 @app.route("/api/generate", methods=["POST", "OPTIONS"])
-@require_login
 def generate():
     if request.method == "OPTIONS":
         return success({})
@@ -208,17 +111,9 @@ def generate():
         max_colors = parse_int("max_colors", max_colors_default if max_colors_default is not None else 12, 2, 48)
         mode = (mode_default if request.is_json else request.form.get("mode")) or "clean"
         palette = (palette_default if request.is_json else request.form.get("palette")) or "mard_221"
-        current_user = request.current_user
-        remaining = None
-        if current_user.get("isGuest"):
-            allowed, remaining = consume_trial(current_user["guestId"])
-            if not allowed:
-                return failure("试用次数已用完，请登录后继续使用", 403)
 
         data = generate_pattern(image_stream, width, height, max_colors, mode, palette)
-        save_pattern(current_user["openid"], data)
-        if remaining is not None:
-            data["trialRemaining"] = remaining
+        save_anonymous_pattern(data)
         return success(data)
     except ValueError as error:
         return failure(str(error), 400)
@@ -228,7 +123,6 @@ def generate():
 
 
 @app.route("/api/patterns/<pattern_id>/export", methods=["GET", "OPTIONS"])
-@require_login
 def export(pattern_id):
     if request.method == "OPTIONS":
         return success({})
@@ -237,7 +131,7 @@ def export(pattern_id):
     if file_format not in ("png", "pdf"):
         return failure("导出格式仅支持 png 或 pdf", 400)
 
-    pattern = get_pattern_for_user(request.current_user["openid"], pattern_id)
+    pattern = get_pattern(pattern_id)
     if not pattern:
         return failure("图纸不存在或无权访问", 404)
 
@@ -246,14 +140,13 @@ def export(pattern_id):
 
 
 @app.route("/api/patterns/<pattern_id>/export-base64", methods=["GET", "OPTIONS"])
-@require_login
 def export_base64(pattern_id):
     if request.method == "OPTIONS":
         return success({})
     file_format = request.args.get("format", "png").lower()
     if file_format not in ("png", "pdf"):
         return failure("导出格式仅支持 png 或 pdf", 400)
-    pattern = get_pattern_for_user(request.current_user["openid"], pattern_id)
+    pattern = get_pattern(pattern_id)
     if not pattern:
         return failure("图纸不存在或无权访问", 404)
     buffer, mime_type, filename = export_pattern(pattern, file_format)
@@ -316,46 +209,6 @@ def success(data):
 
 def failure(message, status_code):
     return jsonify({"code": status_code, "message": message, "data": None}), status_code
-
-
-def create_token(openid):
-    return serializer.dumps({"openid": openid}, salt="wechat-login")
-
-def create_guest_token(guest_id):
-    return serializer.dumps({"gid": guest_id}, salt="wechat-login")
-
-
-def read_token(token):
-    return serializer.loads(token, salt="wechat-login", max_age=30 * 24 * 60 * 60)
-
-
-def public_auth_user(user):
-    if user.get("isGuest"):
-        return {
-            "openidMasked": user["openidMasked"],
-            "nickname": user.get("nickname", "试用用户"),
-            "avatarUrl": user.get("avatarUrl", ""),
-            "firstSeen": user["firstSeen"],
-            "lastSeen": user["lastSeen"],
-            "loginCount": 0,
-            "isGuest": True,
-            "trialUsed": user["trialUsed"],
-            "trialLimit": user["trialLimit"],
-            "trialRemaining": user["trialRemaining"],
-        }
-    return public_user(user)
-
-
-def public_user(user):
-    return {
-        "openidMasked": user["openidMasked"],
-        "nickname": user.get("nickname", "豆豆图用户"),
-        "avatarUrl": user.get("avatarUrl", ""),
-        "firstSeen": user["firstSeen"],
-        "lastSeen": user["lastSeen"],
-        "loginCount": user["loginCount"],
-        "isMock": user.get("isMock", False)
-    }
 
 
 if __name__ == "__main__":
